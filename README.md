@@ -1,20 +1,12 @@
 # kinopub-auth-code-tg-bot
 
-Web app (Express + Pug) plus a small **Telegram bot** that polls Gmail for Kinopub verification messages, reads the **6-digit code** from a `<strong>` tag in the HTML body, and sends that code to Telegram. Processed message ids are stored in `wow_db.sqlite` (same file as the web server).
+A **Telegram bot** that polls Gmail for Kinopub verification messages, reads the **6-digit code** from a `<strong>` tag in the HTML body, and sends that code to Telegram. Processed message ids are stored in `wow_db.sqlite`.
 
 ## Install
 
 ```bash
 bun install
 ```
-
-## Web server
-
-```bash
-bun run server.ts
-```
-
-Listens on port `3333` by default.
 
 ## Gmail → Telegram bot
 
@@ -44,6 +36,12 @@ Open the printed URL, sign in, approve access. Copy `GMAIL_REFRESH_TOKEN` into `
 
 ```bash
 bun run bot
+```
+
+For development with auto-restart on file changes:
+
+```bash
+bun run dev
 ```
 
 Environment variables are documented in [`.env.example`](.env.example). Defaults match mail from `support@kino.pub` with subject `Проверочный код для кинопаба`.
