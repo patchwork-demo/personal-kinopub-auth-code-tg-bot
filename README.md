@@ -38,6 +38,19 @@ Open the printed URL, sign in, approve access. Copy `GMAIL_REFRESH_TOKEN` into `
 bun run bot
 ```
 
+### Run with Docker (VPS)
+
+No systemd unit needed: Compose sets `restart: unless-stopped` and keeps SQLite in a named volume.
+
+```bash
+cp .env.example .env
+# fill .env (Gmail refresh token is easiest to obtain locally: bun run gmail-auth)
+docker compose up -d --build
+docker compose logs -f
+```
+
+`SQLITE_PATH` defaults to `wow_db.sqlite` beside `bot.ts`; Compose overrides it to `/data/wow_db.sqlite` inside the container.
+
 For development with auto-restart on file changes:
 
 ```bash

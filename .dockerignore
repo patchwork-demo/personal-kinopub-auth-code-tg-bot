@@ -1,0 +1,11 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+wow_db.sqlite
+.cursor
+coverage
+*.lcov
+.DS_Store
+.idea

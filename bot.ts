@@ -14,7 +14,9 @@ import {
 } from "./src/bot/extractCode.ts";
 import { collectBodiesFromPayload } from "./src/bot/gmailBody.ts";
 
-const DB_PATH = path.join(import.meta.dir, "wow_db.sqlite");
+const DB_PATH = process.env.SQLITE_PATH?.trim()
+  ? process.env.SQLITE_PATH
+  : path.join(import.meta.dir, "wow_db.sqlite");
 
 function openDb(): Database {
   const db = new Database(DB_PATH, { create: true });
