@@ -96,6 +96,12 @@ async function main(): Promise<void> {
     process.exit(1);
   });
 
+  try {
+    await bot.api.sendMessage(chatId, "Bot started.");
+  } catch (e) {
+    console.warn("[bot] startup notify failed", e);
+  }
+
   console.log(`[bot] Gmail query: ${q}`);
   console.log(`[bot] Poll every ${intervalMs} ms`);
 
@@ -115,18 +121,22 @@ async function main(): Promise<void> {
   await tick();
   setInterval(() => void tick(), intervalMs);
 
-  const shutdown = () => {
-    debugShutdown("SIGTERM/SIGINT, stopping…");
-    void bot.stop();
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log("SIGTERM/SIGINT, stopping…");
+    try {
+      await bot.api.sendMessage(chatId, "Bot shutting down.");
+    } catch (e) {
+      console.warn("[bot] shutdown notify failed", e);
+    }
+    await bot.stop();
     db.close();
     process.exit(0);
   };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-}
-
-function debugShutdown(msg: string): void {
-  console.log(msg);
+  process.on("SIGINT", () => void shutdown());
+  process.on("SIGTERM", () => void shutdown());
 }
 
 main().catch((e) => {
