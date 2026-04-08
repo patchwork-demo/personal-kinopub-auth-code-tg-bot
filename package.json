@@ -1,0 +1,29 @@
+{
+  "name": "kinopub-auth-code-tg-bot",
+  "module": "server.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n s,c \"nodemon --watch src --watch server.ts -e ts,pug,css --exec 'bun run server.ts'\" \"tailwindcss -i ./src/input.css -o ./public/main.css --watch\"",
+    "dev:debug": "concurrently -n s,c \"nodemon --watch src --watch server.ts -e ts,pug,css --exec 'bun --inspect=3344 run server.ts'\" \"tailwindcss -i ./src/input.css -o ./public/main.css --watch\"",
+    "sql": "bunx bun-sql-studio"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.1",
+    "@types/bun": "latest",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/pug": "^2.0.10",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14",
+    "tailwindcss": "^4.2.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "express": "^5.2.1",
+    "pug": "^3.0.3"
+  }
+}

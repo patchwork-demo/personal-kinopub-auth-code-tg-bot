@@ -1,0 +1,5 @@
+{
+  "dialect": "sqlite",
+  "dbUrl": "./wow_db.sqlite",
+  "port": 3355
+}
