@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "concurrently -n s,c \"nodemon --watch src --watch server.ts -e ts,pug,css --exec 'bun run server.ts'\" \"tailwindcss -i ./src/input.css -o ./public/main.css --watch\"",
     "dev:debug": "concurrently -n s,c \"nodemon --watch src --watch server.ts -e ts,pug,css --exec 'bun --inspect=3344 run server.ts'\" \"tailwindcss -i ./src/input.css -o ./public/main.css --watch\"",
-    "sql": "bunx bun-sql-studio"
+    "sql": "bunx bun-sql-studio",
+    "bot": "bun run bot.ts",
+    "gmail-auth": "bun run scripts/gmail-auth.ts"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.1",
@@ -24,6 +26,8 @@
   "dependencies": {
     "compression": "^1.8.1",
     "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "grammy": "^1.42.0",
     "pug": "^3.0.3"
   }
 }
