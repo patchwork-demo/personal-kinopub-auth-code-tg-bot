@@ -1,0 +1,254 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [dev, qa, main]
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: "Where to deploy (manual runs only)"
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+          - prod_test
+        default: dev
+
+jobs:
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   if: github.ref_name == 'dev'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+
+  #     - name: Download node_modules
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: node_modules
+  #         path: node_modules
+
+  #     - name: Run lint
+  #       run: npm run lint
+
+  # unit-tests:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   if: github.ref_name == 'dev'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+
+  #     - name: Download node_modules
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: node_modules
+  #         path: node_modules
+
+  #     - name: Run tests
+  #       run: npm run test
+
+  # code-quality:
+  #   runs-on: ubuntu-latest
+  #   needs: install
+  #   if: github.ref_name == 'dev'
+  #   continue-on-error: true
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0 # Shallow clones should be disabled for better analysis
+
+  #     - name: SonarCloud Scan
+  #       uses: SonarSource/sonarqube-scan-action@v7
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'dev' || github.ref_name == 'qa' || github.ref_name == 'main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve deploy target
+        id: resolve-target
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "target=${{ inputs.deploy_target }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.ref_name }}" in
+              dev) echo "target=dev" >> "$GITHUB_OUTPUT" ;;
+              qa) echo "target=qa" >> "$GITHUB_OUTPUT" ;;
+              main) echo "target=prod" >> "$GITHUB_OUTPUT" ;;
+              *) echo "Unsupported branch for auto-deploy: ${{ github.ref_name }}" && exit 1 ;;
+            esac
+          fi
+
+      - name: Set environment variables (DEV)
+        if: steps.resolve-target.outputs.target == 'dev'
+        run: |
+          echo "REACT_APP_API=${{ vars.REACT_APP_API_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_PROSPECT=${{ vars.REACT_APP_API_PROSPECT_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CONTACT=${{ vars.REACT_APP_API_CONTACT_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CATALOG=${{ vars.REACT_APP_API_CATALOG_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_UPLOAD=${{ vars.REACT_APP_API_UPLOAD_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE=${{ vars.REACT_APP_API_CASE_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE_REPORT=${{ vars.REACT_APP_API_CASE_REPORT_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_INSTRUMENT=${{ vars.REACT_APP_API_INSTRUMENT_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_TEMPLATE=${{ vars.REACT_APP_API_TEMPLATE_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_DOCUMENT=${{ vars.REACT_APP_API_DOCUMENT_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_STATUS=${{ vars.REACT_APP_API_STATUS_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_SERVICE=${{ vars.REACT_APP_API_SERVICE_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_EMAIL=${{ vars.REACT_APP_API_EMAIL_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_S3_LEGAL_FILES_PATH=${{vars.REACT_APP_S3_LEGAL_FILES_PATH_DEV }}" >> $GITHUB_ENV
+          echo "REACT_APP_STRAINER=${{ vars.REACT_APP_STRAINER_DEV }}" >> $GITHUB_ENV
+          echo "ONE_DRIVE_SHARED_FOLDER=${{ secrets.ONE_DRIVE_SHARED_FOLDER_DEV }}" >> $GITHUB_ENV
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY_DEV }}" >> $GITHUB_ENV
+
+      - name: Set environment variables (QA)
+        if: steps.resolve-target.outputs.target == 'qa'
+        run: |
+          echo "REACT_APP_API=${{ vars.REACT_APP_API_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_PROSPECT=${{ vars.REACT_APP_API_PROSPECT_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CONTACT=${{ vars.REACT_APP_API_CONTACT_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CATALOG=${{ vars.REACT_APP_API_CATALOG_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_UPLOAD=${{ vars.REACT_APP_API_UPLOAD_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE=${{ vars.REACT_APP_API_CASE_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE_REPORT=${{ vars.REACT_APP_API_CASE_REPORT_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_INSTRUMENT=${{ vars.REACT_APP_API_INSTRUMENT_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_TEMPLATE=${{ vars.REACT_APP_API_TEMPLATE_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_DOCUMENT=${{ vars.REACT_APP_API_DOCUMENT_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_STATUS=${{ vars.REACT_APP_API_STATUS_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_SERVICE=${{ vars.REACT_APP_API_SERVICE_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_EMAIL=${{ vars.REACT_APP_API_EMAIL_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_S3_LEGAL_FILES_PATH=${{ vars.REACT_APP_S3_LEGAL_FILES_PATH_QA }}" >> $GITHUB_ENV
+          echo "REACT_APP_STRAINER=${{ vars.REACT_APP_STRAINER_QA }}" >> $GITHUB_ENV
+          echo "ONE_DRIVE_SHARED_FOLDER=${{ secrets.ONE_DRIVE_SHARED_FOLDER_QA }}" >> $GITHUB_ENV
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY_DEV }}" >> $GITHUB_ENV
+
+      - name: Set environment variables (PROD)
+        if: steps.resolve-target.outputs.target == 'prod' || steps.resolve-target.outputs.target == 'prod_test'
+        run: |
+          # PROD_TEST uses PROD backend - this is intentional for CI/CD pipeline validation only
+          echo "REACT_APP_API=${{ vars.REACT_APP_API_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_PROSPECT=${{ vars.REACT_APP_API_PROSPECT_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CONTACT=${{ vars.REACT_APP_API_CONTACT_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CATALOG=${{ vars.REACT_APP_API_CATALOG_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_UPLOAD=${{ vars.REACT_APP_API_UPLOAD_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE=${{ vars.REACT_APP_API_CASE_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_CASE_REPORT=${{ vars.REACT_APP_API_CASE_REPORT_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_INSTRUMENT=${{ vars.REACT_APP_API_INSTRUMENT_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_TEMPLATE=${{ vars.REACT_APP_API_TEMPLATE_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_DOCUMENT=${{ vars.REACT_APP_API_DOCUMENT_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_STATUS=${{ vars.REACT_APP_API_STATUS_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_SERVICE=${{ vars.REACT_APP_API_SERVICE_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_API_EMAIL=${{ vars.REACT_APP_API_EMAIL_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_S3_LEGAL_FILES_PATH=${{ vars.REACT_APP_S3_LEGAL_FILES_PATH_PROD }}" >> $GITHUB_ENV
+          echo "REACT_APP_STRAINER=${{ vars.REACT_APP_STRAINER_PROD }}" >> $GITHUB_ENV
+          echo "ONE_DRIVE_SHARED_FOLDER=${{ secrets.ONE_DRIVE_SHARED_FOLDER_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY_DEV }}" >> $GITHUB_ENV
+
+      - name: Build application
+        run: GENERATE_SOURCEMAP=false CI=false npm run-script build
+
+      - name: Configure AWS credentials (DEV)
+        if: steps.resolve-target.outputs.target == 'dev'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-1
+
+      - name: Configure AWS credentials (QA)
+        if: steps.resolve-target.outputs.target == 'qa'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Configure AWS credentials (PROD)
+        if: steps.resolve-target.outputs.target == 'prod'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: us-east-1
+
+      - name: Configure AWS credentials (PROD-TEST)
+        if: steps.resolve-target.outputs.target == 'prod_test'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: us-east-1
+
+      - name: Deploy to S3 (DEV)
+        if: steps.resolve-target.outputs.target == 'dev'
+        run: |
+          echo "Deploying DEV"
+          aws s3 sync ./build ${{ secrets.AWS_S3_URL_DEV }} --delete
+
+      - name: Deploy to S3 (QA)
+        if: steps.resolve-target.outputs.target == 'qa'
+        run: |
+          echo "Deploying QA"
+          aws s3 sync ./build ${{ secrets.AWS_S3_URL_QA }} --delete
+
+      - name: Deploy to S3 (PROD)
+        if: steps.resolve-target.outputs.target == 'prod'
+        run: |
+          echo "Deploying PROD"
+          aws s3 sync ./build ${{ secrets.AWS_S3_URL_PROD }} --delete
+
+      - name: Deploy to S3 (PROD-TEST)
+        if: steps.resolve-target.outputs.target == 'prod_test'
+        run: |
+          echo "Deploying PROD-TEST"
+          aws s3 sync ./build ${{ vars.AWS_S3_URL_PROD_TEST }} --delete
+
+      - name: Invalidate CloudFront cache (DEV)
+        if: steps.resolve-target.outputs.target == 'dev'
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_DISTRIBUTION_ID_DEV }} --paths "/*"
+
+      - name: Invalidate CloudFront cache (QA)
+        if: steps.resolve-target.outputs.target == 'qa'
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_DISTRIBUTION_ID_QA }} --paths "/*"
+
+      - name: Invalidate CloudFront cache (PROD)
+        if: steps.resolve-target.outputs.target == 'prod'
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_DISTRIBUTION_ID_PROD }} --paths "/*"
+
+      - name: Invalidate CloudFront cache (PROD-TEST)
+        if: steps.resolve-target.outputs.target == 'prod_test'
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ vars.AWS_DISTRIBUTION_ID_PROD_TEST }} --paths "/*"
